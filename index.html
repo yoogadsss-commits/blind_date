@@ -256,6 +256,30 @@
         }
 
         .nav-btn:hover { background: var(--accent-purple); box-shadow: 0 0 20px rgba(138, 79, 255, 0.5); border-color: transparent; }
+
+        /* 드로잉 캔버스 스타일 */
+        #drawingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            touch-action: none;
+            cursor: crosshair;
+            pointer-events: none;
+            border-radius: 30px;
+        }
+
+        #drawingCanvas.active {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn.active {
+            background: var(--accent-pink) !important;
+            border-color: var(--accent-pink) !important;
+        }
     </style>
 </head>
 <body>
@@ -282,6 +306,7 @@
         </div>
 
         <div class="slide-container" id="slideContainer">
+            <canvas id="drawingCanvas"></canvas>
             <!-- 질문 슬라이드가 여기에 동적으로 생성됩니다 -->
         </div>
 
@@ -300,6 +325,8 @@
 
     <div class="bottom-nav">
         <button class="nav-btn" id="prevBtn">◀ PREV</button>
+        <button class="nav-btn" id="memoBtn"><i class="fa-solid fa-pen-nib"></i> MEMO OFF</button>
+        <button class="nav-btn" id="clearBtn"><i class="fa-solid fa-eraser"></i> CLEAR</button>
         <button class="nav-btn" id="nextBtn">NEXT ▶</button>
     </div>
 
@@ -389,6 +416,78 @@
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') nextBtn.click();
             if (e.key === 'ArrowLeft') prevBtn.click();
+        });
+
+        // --- 애플펜슬 드로잉 로직 추가 ---
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d', { desynchronized: true });
+        const memoBtn = document.getElementById('memoBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#ff4a85'; // 기본 핑크색 펜
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        canvas.addEventListener('pointerdown', (e) => {
+            // 메모 모드가 켜져있거나 애플펜슬일 때만 작동
+            if (e.pointerType === 'pen' || canvas.classList.contains('active')) {
+                isDrawing = true;
+                [lastX, lastY] = [e.offsetX, e.offsetY];
+                
+                // 점 찍기 대응
+                ctx.beginPath();
+                ctx.arc(e.offsetX, e.offsetY, (e.pressure || 0.5) * 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!isDrawing) return;
+
+            // 고주파수 이벤트 처리 (getCoalescedEvents)
+            const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+            
+            for (let event of events) {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(event.offsetX, event.offsetY);
+                
+                // 애플펜슬 압력 감도 적용 (기본 0.5, 펜슬은 0~1)
+                const pressure = event.pressure || 0.5;
+                ctx.lineWidth = pressure * 12; // 압력에 따라 굵기 변화
+                
+                ctx.stroke();
+                [lastX, lastY] = [event.offsetX, event.offsetY];
+            }
+        });
+
+        canvas.addEventListener('pointerup', () => { isDrawing = false; });
+        canvas.addEventListener('pointerleave', () => { isDrawing = false; });
+
+        // 메모 모드 토글
+        memoBtn.addEventListener('click', () => {
+            const isActive = canvas.classList.toggle('active');
+            memoBtn.classList.toggle('active');
+            memoBtn.innerHTML = isActive ? 
+                '<i class="fa-solid fa-pen-nib"></i> MEMO ON' : 
+                '<i class="fa-solid fa-pen-nib"></i> MEMO OFF';
+        });
+
+        // 캔버스 초기화
+        clearBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         });
 
         updateStage();
