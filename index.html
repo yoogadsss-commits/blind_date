@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLIND VOICE - 라이브 보드</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0b0813;
+            --card-bg: #161129;
+            --accent-pink: #ff4a85;
+            --accent-blue: #00b4d8;
+            --accent-purple: #8a4fff;
+            --text-color: #ffffff;
+            --heart-red: #ff0040;
+            --heart-broken: #64748b;
+            --yellow-circle: #ffd700;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* 헤더 & 로고 섹션 */
+        header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-main {
+            background: linear-gradient(45deg, var(--accent-blue), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        .logo-sub {
+            font-size: 14px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+            padding-left: 10px;
+        }
+
+        .stage-badge {
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 18px;
+            box-shadow: 0 0 20px rgba(138, 79, 255, 0.3);
+            transition: all 0.5s ease;
+        }
+
+        /* 메인 레이아웃 */
+        .main-layout {
+            display: flex;
+            width: 100%;
+            max-width: 1500px;
+            height: calc(100vh - 200px);
+            align-items: center;
+            justify-content: space-between;
+            gap: 50px;
+        }
+
+        /* 게이지 섹션 */
+        .gauge-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            width: 300px;
+            justify-content: space-between;
+        }
+
+        /* 닉네임 입력 (수정 시 점선 인터랙션 포함) */
+        .nickname-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            text-align: center;
+            font-size: 34px;
+            font-weight: 900;
+            padding: 20px 10px;
+            border-radius: 25px;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            letter-spacing: -1px;
+        }
+
+        #leftInput { border: 4px solid var(--accent-blue); color: var(--accent-blue); box-shadow: 0 0 20px rgba(0, 180, 216, 0.2); }
+        #rightInput { border: 4px solid var(--accent-pink); color: var(--accent-pink); box-shadow: 0 0 20px rgba(255, 74, 133, 0.2); }
+
+        .nickname-input:focus {
+            border: 4px dashed #ffffff !important;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff !important;
+        }
+
+        /* 그래프 디자인 */
+        .graph-outer {
+            position: relative;
+            width: 80px;
+            height: 70%;
+            background: #151126;
+            border-radius: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.05);
+            cursor: ns-resize;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+        }
+
+        .graph-bar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50%;
+            border-radius: 0 0 50px 50px;
+            transition: height 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+
+        #leftBar { background: linear-gradient(0deg, #005f73, var(--accent-blue)); }
+        #rightBar { background: linear-gradient(0deg, #9b5de5, var(--accent-pink)); }
+
+        /* 노란 원형 캡슐 하트 (가시성 강화) */
+        .heart-anchor {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85px;
+            height: 85px;
+            background-color: var(--yellow-circle);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(0,0,0,0.2);
+            border: 4px solid #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .heart-anchor i {
+            font-size: 45px;
+            transition: all 0.2s ease;
+        }
+
+        /* 애니메이션 */
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.3); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+            60% { transform: scale(1); }
+        }
+
+        @keyframes heartWither {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .beating i { animation: heartBeat 0.8s infinite; color: var(--heart-red); filter: drop-shadow(0 0 10px rgba(255,0,0,0.5)); }
+        .normal i { animation: heartBeat 2s infinite; color: var(--accent-pink); }
+        .broken i { animation: heartWither 1s infinite; color: var(--heart-broken); }
+        .broken { background-color: #d1d1d1; border-color: #999; filter: grayscale(0.5); }
+
+        .gauge-val { font-size: 30px; font-weight: 900; margin-top: 15px; }
+
+        /* 중앙 질문 보드 */
+        .slide-container {
+            flex: 1;
+            height: 450px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: 30px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            opacity: 0;
+            transform: scale(0.9) translateY(30px);
+            pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .slide.active { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+
+        .q-num { font-size: 18px; color: var(--accent-purple); font-weight: 800; letter-spacing: 3px; margin-bottom: 20px; display: block; }
+        .q-text { font-size: 38px; font-weight: 700; line-height: 1.5; word-break: keep-all; }
+
+        /* 하단 내비게이션 */
+        .bottom-nav {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            gap: 30px;
+            margin-bottom: 10px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 18px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+
+        .nav-btn:hover { background: var(--accent-purple); box-shadow: 0 0 20px rgba(138, 79, 255, 0.5); border-color: transparent; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span class="logo-main">Blind Voice</span>
+            <span class="logo-sub">오직 목소리로 통한다</span>
+        </div>
+        <div class="stage-badge" id="stageBadge">STARTING</div>
+    </header>
+
+    <div class="main-layout">
+        <div class="gauge-section">
+            <input type="text" class="nickname-input" id="leftInput" value="출연자 A">
+            <div class="graph-outer" id="leftContainer">
+                <div class="graph-bar" id="leftBar">
+                    <div class="heart-anchor" id="leftHeart">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="gauge-val" id="leftVal" style="color: var(--accent-blue);">50%</div>
+        </div>
+
+        <div class="slide-container" id="slideContainer">
+            <!-- 질문 슬라이드가 여기에 동적으로 생성됩니다 -->
+        </div>
+
+        <div class="gauge-section">
+            <input type="text" class="nickname-input" id="rightInput" value="출연자 B">
+            <div class="graph-outer" id="rightContainer">
+                <div class="graph-bar" id="rightBar">
+                    <div class="heart-anchor" id="rightHeart">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="gauge-val" id="rightVal" style="color: var(--accent-pink);">50%</div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-btn" id="prevBtn">◀ PREV</button>
+        <button class="nav-btn" id="nextBtn">NEXT ▶</button>
+    </div>
+
+    <script src="topic_blind_date_questions.js"></script>
+    <script>
+        const slideContainer = document.getElementById('slideContainer');
+        
+        // 질문 데이터로부터 슬라이드 생성
+        questionData.forEach((q, index) => {
+            const slide = document.createElement('div');
+            slide.className = `slide ${index === 0 ? 'active' : ''}`;
+            slide.setAttribute('data-stage', q.stage);
+            slide.setAttribute('data-color', q.color);
+            slide.innerHTML = `
+                <span class="q-num">${q.num}</span>
+                <div class="q-text">${q.text}</div>
+            `;
+            slideContainer.appendChild(slide);
+        });
+
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const stageBadge = document.getElementById('stageBadge');
+        let currentIdx = 0;
+
+        // 질문 단계 업데이트
+        function updateStage() {
+            const currentSlide = slides[currentIdx];
+            stageBadge.textContent = currentSlide.getAttribute('data-stage');
+            stageBadge.style.backgroundColor = currentSlide.getAttribute('data-color');
+        }
+
+        // 슬라이드 전환
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[index].classList.add('active');
+            updateStage();
+        }
+
+        nextBtn.addEventListener('click', () => { if (currentIdx < slides.length - 1) { currentIdx++; showSlide(currentIdx); } });
+        prevBtn.addEventListener('click', () => { if (currentIdx > 0) { currentIdx--; showSlide(currentIdx); } });
+
+        // 그래프 및 하트 로직
+        function setupGraph(containerId, barId, heartId, valId) {
+            const container = document.getElementById(containerId);
+            const bar = document.getElementById(barId);
+            const heartAnchor = document.getElementById(heartId);
+            const valDisplay = document.getElementById(valId);
+            let isDragging = false;
+
+            function update(clientY) {
+                const rect = container.getBoundingClientRect();
+                let percentage = Math.round(((rect.bottom - clientY) / rect.height) * 100);
+                percentage = Math.max(0, Math.min(100, percentage));
+
+                bar.style.height = percentage + '%';
+                valDisplay.textContent = percentage + '%';
+
+                const heartIcon = heartAnchor.querySelector('i');
+                heartAnchor.classList.remove('beating', 'normal', 'broken');
+                heartIcon.className = 'fa-solid fa-heart';
+
+                if (percentage >= 80) {
+                    heartAnchor.classList.add('beating'); // 80% 이상: 폭풍 박동
+                } else if (percentage > 30) {
+                    heartAnchor.classList.add('normal');  // 중간: 일반 박동
+                } else {
+                    heartAnchor.classList.add('broken');  // 30% 이하: 깨진 하트 + 창백해짐
+                    heartIcon.className = 'fa-solid fa-heart-crack';
+                }
+            }
+
+            container.addEventListener('mousedown', (e) => { isDragging = true; update(e.clientY); });
+            window.addEventListener('mousemove', (e) => { if (isDragging) update(e.clientY); });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            // 터치 지원
+            container.addEventListener('touchstart', (e) => { isDragging = true; update(e.touches[0].clientY); });
+            window.addEventListener('touchmove', (e) => { if (isDragging) update(e.touches[0].clientY); });
+            window.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        setupGraph('leftContainer', 'leftBar', 'leftHeart', 'leftVal');
+        setupGraph('rightContainer', 'rightBar', 'rightHeart', 'rightVal');
+
+        // 키보드 내비게이션
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextBtn.click();
+            if (e.key === 'ArrowLeft') prevBtn.click();
+        });
+
+        updateStage();
+    </script>
+</body>
+</html>
